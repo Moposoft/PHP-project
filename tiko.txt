@@ -1,0 +1,158 @@
+Tietokantakaaviot:
+
+Htiedot(Htunnus, Nimi, Osoite, Sähköposti, Puhelinnumero)
+Tuutorit(Htunnus, Tuutoritunnus)
+Ryhmät(Ryhmänro, Tuutoritunnus, Aloituspvm)
+Opiskelijat(Opiskelijanro, Htunnus, Ryhmänro, Alkamisvuosi, Ryhmäpalaveri, Eka_syksy
+Eka_kevät, Toka_syksy,  Toka_kevät, Kolmas_syksy, Kolmas_kevät, Poisjäänin_syy)
+Hops(Opiskelijanro, Lukuvuosi, Töissä, Työn_kuvaus, Työn_tuntimäärä, Perustelut,
+Suoritetut_op, Pääaine_op, Muut_op, Katsaus1, Katsaus2, Katsaus3, Katsaus4)
+Hops_opintojaksot(Opiskelijanro, Lukuvuosi, Opintojakson_nimi, Opintopisteitä,
+Oppiaine, Lukukausi)
+Suoritukset(Opiskelijanro, Kurssinimi, Opintopisteitä, Oppiaine, Lukukausi, Lukuvuosi)
+
+
+Luontilauseet:
+
+CREATE TABLE Htiedot(
+Htunnus char(11) NOT NULL,
+Nimi varchar(50) NOT NULL,
+Osoite varchar(50) NOT NULL,
+Sähköposti varchar(50) NOT NULL,
+Puhelinnro varchar(20), --ei puhelinta?
+PRIMARY KEY (Htunnus)
+);
+
+CREATE TABLE Tuutorit(
+Htunnus char(11) NOT NULL,
+Tuutoritunnus int NOT NULL UNIQUE,
+PRIMARY KEY (Htunnus),
+FOREIGN KEY (Htunnus) REFERENCES Htiedot
+);
+
+CREATE TABLE Ryhmät(
+Ryhmänro int NOT NULL,
+Tuutoritunnus int NOT NULL,
+Aloituspvm date NOT NULL,
+FOREIGN KEY (Tuutoritunnus) REFERENCES Tuutorit(Tuutoritunnus),
+PRIMARY KEY (Ryhmänro)
+);
+
+CREATE TABLE Opiskelijat(
+Opiskelijanro int NOT NULL,
+Htunnus char(11) NOT NULL UNIQUE,
+Ryhmänro int NOT NULL,
+Alkamisvuosi int NOT NULL,
+Ryhmäpalaveri boolean, --null jos palaveria ei vielä pidetty.
+Eka_syksy boolean, --null jos palaveria ei vielä pidetty.
+Eka_kevät boolean, --null jos palaveria ei vielä pidetty.
+Toka_syksy boolean, --null jos palaveria ei vielä pidetty.
+Toka_kevät boolean, --null jos palaveria ei vielä pidetty.
+Kolmas_syksy boolean, --null jos palaveria ei vielä pidetty.
+Kolmas_kevät boolean, --null jos palaveria ei vielä pidetty.
+Poisjäänin_syy int, --null jos ei ole poisjäänyt. syy numerolla 1-5, jossa 5=ei tiedossa.
+PRIMARY KEY (Opiskelijanro),
+FOREIGN KEY (Ryhmänro) REFERENCES Ryhmät
+FOREIGN KEY (Htunnus) REFERENCES Htiedot,
+);
+
+
+CREATE TABLE Hops(
+Opiskelijanro int NOT NULL,
+Lukuvuosi int NOT NULL, --esim 1,2,3
+Töissä boolean,
+Työn_kuvaus varchar(100),
+Työn_tuntimäärä int,
+Perustelut varchar(200),
+Suoritetut_op int, --Sinäänsä redundatti, mutta lomakeessa kysytään.
+Pääaine_op int,
+Muut_op int,
+Katsaus1 varchar(1000),
+Katsaus2 varchar(1000),
+Katsaus3 varchar(1000),
+Katsaus4 varchar(1000),
+OpettajaTuutori varchar(50) NOT NULL, --viime lukuvuonna.
+PRIMARY KEY (Opiskelijanro, Lukuvuosi),
+FOREIGN KEY (Opiskelijanro) REFERENCES Opiskelijat
+);
+
+CREATE TABLE Hops_opintojaksot(
+Opiskelijanro int NOT NULL,
+Lukuvuosi int NOT NULL,
+Opintojakson_nimi varchar(40) NOT NULL,
+Opintopisteitä int NOT NULL,
+Oppiaine varchar(30) NOT NULL,
+Lukukausi char(5) NOT NULL, --syksy/kevät
+PRIMARY KEY (Opiskelijanro, Lukuvuosi, Opintojakson_nimi),
+FOREIGN KEY (Opiskelijanro, Lukuvuosi) REFERENCES Hops
+);
+
+CREATE TABLE Suoritukset(
+Opiskelijanro INT NOT NULL,
+Kurssinimi varchar(40) NOT NULL,
+Opintopisteitä int NOT NULL,
+Oppiaine varchar(30) NOT NULL,
+Lukukausi char(5) NOT NULL, --syksy/kevät
+Lukuvuosi int NOT NULL,
+PRIMARY KEY (Kurssinimi, Opiskelijanro),
+FOREIGN KEY (Opiskelijanro) REFERENCES Opiskelijat
+);
+
+
+Raporttien johto:
+
+--R1
+select *
+from hops
+natural join Hops_opintojaksot
+where lukuvuosi=?;
+
+--R2
+select lukuvuosi,lukukausi,opintopisteitä
+from suoritukset
+where opiskelijanro=?;
+
+--R3
+select sähköposti
+from opiskelijat
+natural join htiedot
+where alkamisvuosi=(
+   select date_part('year',current_date)-3);
+   
+--R4
+a)
+select ryhmänro,count(*)
+from opiskeliat
+natural join ryhmät
+group by ryhmänro;
+b)
+select count(*) from hops where lukuvuosi=?;
+
+--R5
+select nimi, count(*)
+from htiedot
+natural join tuutorit
+natural join ryhmät
+natural join opiskelijat
+group by nimi;
+
+
+--R6
+
+
+Tapahtumia
+
+
+Opiskelijan  Hops täyttö
+
+insert into hops values...
+insert into hops_ opintojaksot values...
+commit;
+
+Ryhmiinjako
+
+insert into ryhmät values....
+update opsikelijat set rymhmänumero....
+update opsikelijat set rymhmänumero....
+….
+commit;
